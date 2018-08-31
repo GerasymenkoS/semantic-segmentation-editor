@@ -2,6 +2,7 @@ import React from 'react';
 import {withTracker} from "meteor/react-meteor-data";
 import SseFloodPanel from "./tools/SseFloodPanel";
 import SseLayers from "./SseLayers";
+import SseAllLayers from "./SseAllLayers";
 import Slider from "rc-slider";
 import SseMsg from "../../common/SseMsg";
 
@@ -152,6 +153,7 @@ export default class SseSliderPanel extends React.Component {
                     <div className={this.state.visiblePanel == "flood" ? "" : "display-none"}>
                         <SseFloodPanel/>
                     </div>
+                    <SseAllLayers />
                 </div>
                 <div className="section"><h1>Image Filters</h1>
                     {/*<Toggle label="Edges" labelPosition="left" className="mt3"*/}

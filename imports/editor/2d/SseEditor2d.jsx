@@ -944,6 +944,24 @@ export default class SseEditor2d extends React.Component {
             this.layerIndex = arg.index;
         });
 
+        this.onMsg("class-hide", ({ index }) => {
+            this.clearActualSelection();
+
+            this.mainLayer.children
+                .filter(pol => { 
+                    return +pol.feature.classIndex === +index
+                })
+                .forEach(pol => pol.visible = false);
+        });
+
+        this.onMsg("class-show", ({ index }) => {
+            this.clearActualSelection();
+
+            this.mainLayer.children
+                .filter(pol => +pol.feature.classIndex === +index)
+                .forEach(pol => pol.visible = true);
+        });
+
         this.onMsg("layer-hide", (arg) => {
             this.clearActualSelection();
             this.hiddenLayers.add(arg.index);
@@ -1020,8 +1038,11 @@ export default class SseEditor2d extends React.Component {
 
 
         const canvas = $('#rasterCanvas').get(0);
-
         Paper.setup(canvas);
+        
+        // const mainScope = new Paper.PaperScope()
+        // mainScope.setup(canvas);
+        // mainScope.activate();
 
         // The layer for the image
         this.rasterLayer = new Paper.Layer();
@@ -1073,6 +1094,11 @@ export default class SseEditor2d extends React.Component {
         this.sendMsg("editor-ready", {value: this.currentSample});
         this.imageLoaded();
 
+        this.mainLayer.activate();
+    }
+
+    componentDidUpdate() {
+        this.mainLayer.activate();
     }
 
     updateLayers() {

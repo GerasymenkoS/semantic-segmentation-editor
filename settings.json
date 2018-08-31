@@ -1,7 +1,7 @@
 {
   "configuration": {
-    "input-folder": "XXXXX",
-    "output-folder": "XXXXX"
+    "input-folder": "/mnt/images/",
+    "output-folder": "/mnt/pointcloud/"
   },
   "sets-of-classes": [
     {

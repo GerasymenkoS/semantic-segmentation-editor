@@ -70,7 +70,7 @@ export default class SseLayers extends React.Component {
     render() {
         return (
             <div>
-                <h1>Layers</h1>
+                <h1>Main Layers</h1>
                 {this.state.layers.map((obj) => (
                     <div key={obj.index} className="sse-layer hflex flex-align-items-center">
                         <div className={this.state.selected == obj.index ? "selected" : ""}>
