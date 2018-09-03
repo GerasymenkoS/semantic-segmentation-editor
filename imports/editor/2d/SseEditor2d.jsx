@@ -946,20 +946,23 @@ export default class SseEditor2d extends React.Component {
 
         this.onMsg("class-hide", ({ index }) => {
             this.clearActualSelection();
-
             this.mainLayer.children
                 .filter(pol => { 
-                    return +pol.feature.classIndex === +index
+                    return pol.feature.classIndex === +index
                 })
-                .forEach(pol => pol.visible = false);
+                .forEach(pol => {
+                    pol.visible = false;
+                    pol.fullySelected = false;
+                });
+            this.sendMsg("update-layers-list", this.mainLayer.children);
         });
 
         this.onMsg("class-show", ({ index }) => {
             this.clearActualSelection();
-
             this.mainLayer.children
-                .filter(pol => +pol.feature.classIndex === +index)
+                .filter(pol => pol.feature.classIndex === index)
                 .forEach(pol => pol.visible = true);
+            this.sendMsg("update-layers-list", this.mainLayer.children);
         });
 
         this.onMsg("layer-hide", (arg) => {
@@ -971,6 +974,7 @@ export default class SseEditor2d extends React.Component {
                     pol.fullySelected = false;
                     pol.visible = false;
                 });
+            this.sendMsg("update-layers-list", this.mainLayer.children);
         });
 
         this.onMsg("layer-show", (arg) => {
@@ -978,6 +982,7 @@ export default class SseEditor2d extends React.Component {
             this.mainLayer.children
                 .filter(pol => (arg.index == 0 && pol.feature.layer == undefined) || pol.feature.layer == arg.index)
                 .forEach(pol => pol.visible = true);
+            this.sendMsg("update-layers-list", this.mainLayer.children);
         });
 
         this.onMsg("download", () => {
@@ -1382,6 +1387,7 @@ export default class SseEditor2d extends React.Component {
         classCounter.forEach((v, k) => {
             this.sendMsg("class-instance-count", {classIndex: k, count: v})
         });
+        this.sendMsg("update-layers-list", this.mainLayer.children);
     }
 
     /**

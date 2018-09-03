@@ -7,64 +7,124 @@ export default class SseAllLayers extends React.Component {
     constructor() {
         super();
         SseMsg.register(this);
+
         this.state = {
-            classes: {},
-            selected: 0,
+            layersMap: null,
+            classesMap: null,
+            selectedLayer: 0,
         };
     };
 
     componentDidMount() {
-        this.onMsg("currentSample", (arg) => {
-            const layerClasses = arg.data.objects.reduce((acc, obj) => {
-                if (!acc.classes[obj.classIndex]) {
-                    acc.classes[obj.classIndex] = { layers: [obj], isVisible: true }
+        this.onMsg("editor-ready", (arg) => {
+            const layersMap = arg.value.objects.reduce((acc, obj) => {
+                if (!acc.layersMap[obj.classIndex]) {
+                    acc.layersMap[obj.classIndex] = {
+                        layers: 1, visiblePaths: 1,
+                    };
+
                     return acc;
                 }
-                acc.classes[obj.classIndex].layers.push(obj);
+                acc.layersMap[obj.classIndex].layers++;
+                acc.layersMap[obj.classIndex].visiblePaths++;
+
                 return acc;
-            }, { classes: {} });
-            console.log(Object.entries(layerClasses));
-            this.setState(layerClasses);
+            }, { layersMap: {} });
+
+            this.setState(layersMap);
+        });
+
+        this.onMsg("update-layers-list", (paths) => {
+            const layersMap = paths.reduce((acc, path) => {
+                const classIndex = path.feature.classIndex;
+
+                if (!acc.layersMap[classIndex]) {
+                    acc.layersMap[classIndex] = {
+                        layers: 1, visiblePaths: path.visible ? 1 : 0,
+                    };
+
+                    return acc;
+                }
+                acc.layersMap[classIndex].layers++;
+
+                if (path.visible) {
+                    acc.layersMap[classIndex].visiblePaths++;
+                }
+
+                return acc;
+            }, { layersMap: {} });
+
+            this.setState(layersMap);
+        });
+
+        this.onMsg("active-soc", (arg) => {
+            const classesMap = arg.value._config.objects.reduce((acc, obj) => ({
+                ...acc,
+                [obj.classIndex]: obj,
+            }), {});
+
+            this.setState({ classesMap });
         });
     }
 
-    toggleClass(classIndex) {
-        const newClasses = { ...this.state.classes };
-        newClasses[classIndex].isVisible = !newClasses[classIndex].isVisible;
+    toggleClass = (classIndex) => () => {
+        const newLayers = { ...this.state.layersMap };
+
+        if (newLayers[classIndex].visiblePaths > 0) {
+            newLayers[classIndex].visiblePaths = 0;    
+        } else {
+            newLayers[classIndex].visiblePaths = newLayers[classIndex].layers;
+        }
 
         this.setState({
-            classes: newClasses,
+            layersMap: newLayers,
         });
 
-        if (newClasses[classIndex].isVisible)
-            this.sendMsg("class-show", { index: classIndex });
+        if (newLayers[classIndex].visiblePaths)
+            this.sendMsg("class-show", { index: +classIndex });
         else
-            this.sendMsg("class-hide", { index: classIndex });
+            this.sendMsg("class-hide", { index: +classIndex });
     }
 
-    changeClass(idx) {
-        this.setState({ selected: idx });
+    changeClass = (idx) => () => {
+        this.setState({ selectedLayer: +idx });
         this.sendMsg("classSelection", {
-            descriptor: { classIndex: idx }
+            descriptor: { classIndex: +idx }
         });
     }
 
     render() {
+        const { layersMap, classesMap, selectedLayer } = this.state;
+
         return (
             <div>
                 <h1>All Layers</h1>
-                {Object.entries(this.state.classes).map(([className, data]) => (
-                    <div key={className} className="sse-layer hflex flex-align-items-center">
-                        <div className={this.state.selected == className ? "selected" : ""}>
-                            <div onClick={() => this.toggleClass(className)} className="sse-layer-eye">
-                                {data.isVisible ? <Eye/> : <EyeOff/>}</div>
-                            <div className="grow flex-align-items-center"
-                                 onClick={() => this.changeClass(className)}>
-                                <div className="p5 grow">Class index:{className}&nbsp;({data.layers.length})</div>
+                {
+                    layersMap && classesMap ?
+                        Object.entries(layersMap).map(([layerClassIndex, data]) => (
+                            <div
+                                key={layerClassIndex}
+                                className="sse-layer hflex flex-align-items-center"
+                                style={{
+                                    backgroundColor: classesMap[layerClassIndex].color,
+                                }}
+                            >
+                                <div className={selectedLayer == layerClassIndex ? "selected" : ""}>
+                                    <div onClick={this.toggleClass(layerClassIndex)} className="sse-layer-eye">
+                                        {data.visiblePaths > 0 ? <Eye/> : <EyeOff/>}</div>
+                                    <div
+                                        className="grow flex-align-items-center"
+                                        onClick={this.changeClass(layerClassIndex)}
+                                    >
+                                        <div className="p5 grow">
+                                            {classesMap[layerClassIndex].label}&nbsp;({data.layers})
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                ))}
+                        ))
+                        : undefined
+                }
 
             </div>
         );
